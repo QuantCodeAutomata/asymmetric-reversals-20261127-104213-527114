@@ -8,7 +8,9 @@ days inside the 252-day lookback are treated.
 from __future__ import annotations
 
 import numpy as np
+from numpy.linalg import LinAlgError
 from scipy.interpolate import BSpline
+from scipy.linalg import solve
 from scipy.stats import norm
 
 from src import config
@@ -93,7 +95,10 @@ def daily_dl_regression(y: np.ndarray, w_day: np.ndarray, shocks: list[np.ndarra
         yw = y[t, ok].astype("float64") * sw
         # WLS normal equations (Equation 19/23): (X'WX) b = X'Wy
         XtX = Xw.T @ Xw
-        coef = np.linalg.lstsq(XtX, Xw.T @ yw, rcond=None)[0][1:]
+        try:
+            coef = solve(XtX, Xw.T @ yw, assume_a="pos")[1:]
+        except LinAlgError:  # singular normal equations: minimum-norm least squares
+            coef = np.linalg.lstsq(XtX, Xw.T @ yw, rcond=None)[0][1:]
         if basis is not None:
             K = basis.shape[1]
             out[j] = np.stack([basis @ coef[s * K:(s + 1) * K] for s in range(S)])

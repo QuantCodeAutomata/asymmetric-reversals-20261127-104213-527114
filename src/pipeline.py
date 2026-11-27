@@ -202,6 +202,15 @@ def prev_month_index(dates: pd.DatetimeIndex, mends: pd.DatetimeIndex) -> np.nda
     return np.searchsorted(mends.values, dates.values, side="left") - 1
 
 
+def daily_weights(panel: dict) -> np.ndarray:
+    """(T, N) WLS weights of day t: beginning-of-month winsorized ME of investable stocks (Section 3)."""
+    pm = prev_month_index(panel["dates"], panel["mends"])
+    wgt = np.where(panel["univ"], panel["wgt"], np.nan).astype("float32")
+    w_day = np.where(pm[:, None] >= 0, wgt[np.maximum(pm, 0)], np.nan)
+    w_day[panel["dates"] < pd.Timestamp(config.DECOMP_START)] = np.nan
+    return w_day
+
+
 def build_decomposition(base: dict, ch: dict, ff_d: pd.DataFrame) -> dict:
     """Daily decompositions: characteristics + industries (baseline) and characteristics only (Section 3)."""
     dates, mends = base["dates"], base["mends"]
@@ -237,7 +246,7 @@ def load_panel(rebuild: bool = False) -> dict:
     if done.exists() and not rebuild:
         out = {}
         for p in PANEL_DIR.glob("*.npy"):
-            out[p.stem] = np.load(p, allow_pickle=False)
+            out[p.stem] = np.load(p, allow_pickle=False, mmap_mode="r")  # memory-mapped, read-only
         out["dates"], out["mends"] = pd.DatetimeIndex(out["dates"]), pd.DatetimeIndex(out["mends"])
         out["ff_d"] = pd.read_parquet(PANEL_DIR / "ff_d.parquet")
         out["ff_m"] = pd.read_parquet(PANEL_DIR / "ff_m.parquet")
