@@ -1,0 +1,18 @@
+{
+  "avg_char_ind_wls": 0.29137056820269774,
+  "avg_char_ind_ols": 0.20787630127569448,
+  "avg_char_only_wls": 0.21910049830076192,
+  "avg_char_only_ols": 0.1611925157034448,
+  "avg_ff3_ts_wls": 0.13550844614737403,
+  "avg_ff3_ts_ols": 0.1147937086717684,
+  "gap_char_ind_vs_ff3_wls": 0.1558621220553237,
+  "gap_char_only_vs_ff3_wls": 0.08359205215338789,
+  "gap_char_ind_vs_ff3_ols": 0.09308259260392608,
+  "gap_char_only_vs_ff3_ols": 0.04639880703167641,
+  "max_char_ind_wls": 0.39878704883886207,
+  "year_max_char_ind_wls": 2022,
+  "years": [
+    2011,
+    2022
+  ]
+}

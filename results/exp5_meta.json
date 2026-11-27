@@ -1,0 +1,17 @@
+{
+  "n_days": 2768,
+  "first_day": "2012-01-03",
+  "last_day": "2022-12-30",
+  "n_dense_slopes": 1008,
+  "n_spline_slopes": 81,
+  "implied_monthly_slope_from_daily_spline": {
+    "eps_pos": -0.019370100263416325,
+    "eps_neg": -0.038889720230293405
+  },
+  "peak_weight_lags": [
+    21,
+    22
+  ],
+  "runtime_s": 774.6071581840515,
+  "maxrss_mb": 678.62890625
+}
