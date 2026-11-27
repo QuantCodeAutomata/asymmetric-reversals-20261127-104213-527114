@@ -24,7 +24,7 @@ from src.asres import first_day_next_month
 from src.irf import forward_sum
 from src.pipeline import load_panel
 from src.reporting import RESULTS_DIR, fm_controls, formation_rows, save_csv, save_json
-from src.signals import ivol_horizon, monthly_inputs
+from src.signals import ivol_horizon, month_blocks, monthly_inputs
 from src.stats import assign_quantiles, fama_macbeth, fm_coef_series, nw_mean
 
 log = logging.getLogger(__name__)
@@ -74,9 +74,13 @@ def ivol_horizon_figure(panel: dict, mi: dict, ctrl: dict, rows: np.ndarray) -> 
         ok = t0 >= 0
         y[ok] = fs[t0[ok]]
         ys[h] = masked(y, valid)
+    # Figure 2 caption: the lookback covers the 1..21 days immediately before the
+    # return measurement window, so the last trading day of the month is not skipped.
+    blocks_full = month_blocks(panel["dates"], skip_last=False)
+    assert len(blocks_full) == len(mi["blocks"])
     recs = []
     for H in config.IVOL_H_GRID:
-        iv = ivol_horizon(panel["eps_ci"], mi["blocks"], H)
+        iv = ivol_horizon(panel["eps_ci"], blocks_full, H)
         for h, y in ys.items():
             res = fama_macbeth(y, {"IVOL_H": iv, **ctrl}, mi["w"], periods=rows)
             recs.append({"H": H, "hold_days": h, "coef": res.loc["IVOL_H", "coef"], "t": res.loc["IVOL_H", "t"]})

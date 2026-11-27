@@ -19,7 +19,7 @@ import pandas as pd
 
 from src.decomposition import annual_adj_r2
 from src.pipeline import load_panel
-from src.reporting import RESULTS_DIR, save_csv, save_json
+from src.reporting import RESULTS_DIR, save_json
 
 log = logging.getLogger(__name__)
 MODELS = {"char_ind": "ci", "char_only": "c", "ff3_ts": "ff3"}
@@ -58,7 +58,6 @@ def main() -> None:
     panel = load_panel()
     tab = adj_r2_table(panel)
     log.info("annual adjusted R2:\n%s", tab.round(4))
-    save_csv(tab, "exp1_annual_adj_r2")
     avg = tab.mean()
     summary = {f"avg_{k}": float(v) for k, v in avg.items()}
     for suf in ("wls", "ols"):
