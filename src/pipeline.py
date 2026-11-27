@@ -34,6 +34,7 @@ from src.characteristics import (accounting_characteristics, price_characteristi
 from src.decomposition import daily_decomposition, ff3_timeseries_fit, zero_ea_residuals
 from src.fundamentals import add_ttm_and_growth, merge_statements, sue, to_monthly
 from src.panel import compound_monthly, daily_returns, month_ends, month_id, to_wide
+from src.zoo import misp_score
 from src.universe import investable_mask, winsorized_weights
 
 log = logging.getLogger(__name__)
@@ -188,7 +189,8 @@ def build_characteristics(base: dict, raw: dict) -> dict:
         "op": ac["ope_be"], "inv": ac["at_gr1"], "mom": pc["ret_12_1"],
     }
     out = {"chars": chars, "incl": incl.to_numpy(), "char_names": np.array(names),
-           "coverage": coverage.to_numpy(), "sue": f["sue"].reindex(index=mends, columns=secs).to_numpy()}
+           "coverage": coverage.to_numpy(), "sue": f["sue"].reindex(index=mends, columns=secs).to_numpy(),
+           "misp": misp_score(raw_chars, univ, mends, secs)}
     for k, v in ctrl.items():
         out["ctrl_" + k] = v.reindex(index=mends, columns=secs).to_numpy("float64")
     log.info("characteristics: %d built, included per month %d-%d", K, incl.sum(axis=1).min(), incl.sum(axis=1).max())

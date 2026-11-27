@@ -94,3 +94,34 @@ def monthly_sum(daily: np.ndarray, blocks: list[tuple[int, int]], min_obs: int =
 def compound(daily_ret: np.ndarray, blocks: list[tuple[int, int]], min_obs: int = 1) -> np.ndarray:
     """Compounded return over each block."""
     return block_apply(daily_ret, blocks, lambda b: np.expm1(np.nansum(np.log1p(b), axis=0)), min_obs=min_obs)
+
+
+def monthly_inputs(panel: dict) -> dict:
+    """Shared month-level inputs of the monthly experiments (Sections 4-5, 7).
+
+    Returns a dict of (M, N) arrays indexed by formation month m (row of ``mends``):
+        ``exret_next``: compounded month m+1 return minus the month m+1 risk-free rate;
+        ``ret_form``: 1-day-skipped compounded raw return of month m (STREV signal);
+        ``w``: end-of-month-m market equity winsorized at the 80th NYSE percentile;
+        ``valid``: investable at the end of month m;
+        RES, SYS, RES_pos, RES_neg, CONC_pos, CONC_neg, CONC from the earnings-adjusted decomposition;
+        ``IVOL`` (raw residuals) and ``IVOL_noEA`` (earnings-adjusted residuals);
+    plus ``blocks`` (active-day row ranges) and ``rf_m`` (M,) monthly risk-free rates.
+    """
+    dates = panel["dates"]
+    blocks = month_blocks(dates, skip_last=True)
+    full = month_blocks(dates, skip_last=False)
+    rf_d = panel["ff_d"]["RF"].reindex(dates).to_numpy()
+    rf_m = np.array([np.expm1(np.log1p(rf_d[a:b]).sum()) for a, b in full])
+    ret_m = compound(panel["ret"], full)
+    exret_m = ret_m - rf_m[:, None]
+    exret_next = np.full_like(exret_m, np.nan)
+    exret_next[:-1] = exret_m[1:]
+    out = {"blocks": blocks, "rf_m": rf_m, "exret_m": exret_m, "exret_next": exret_next,
+           "ret_form": compound(panel["ret"], blocks),
+           "w": panel["wgt"].astype("float64"), "valid": panel["univ"].astype(bool)}
+    out.update(res_sys(panel["eps_t"], panel["r_t"], blocks))
+    out["IVOL"] = ivol(panel["eps_ci"], blocks)
+    out["IVOL_noEA"] = ivol(panel["eps_t"], blocks)
+    assert len(blocks) == len(panel["mends"])
+    return out
