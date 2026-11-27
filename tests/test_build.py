@@ -83,12 +83,14 @@ def test_shares_panel_latest_quarter_split_adjusted_and_stale() -> None:
     secs = pd.DataFrame({"cik": ["c1"], "tickers": [["T"]], "first_seen": [pd.Timestamp("2019-12-31")]}, index=["s"])
     income = pd.DataFrame({"cik": ["c1", "c1"], "period_end": ["2020-03-31", "2020-06-30"],
                            "basic_shares_outstanding": [100.0, 110.0]})
-    splits = pd.DataFrame({"ticker": ["T"], "execution_date": ["2020-05-15"], "split_to": [2.0], "split_from": [1.0]})
+    # restated counts (latest split basis): a 2-for-1 split inside the window keeps them; one after it halves them
+    splits = pd.DataFrame({"ticker": ["T", "T"], "execution_date": ["2020-05-15", "2022-01-10"],
+                           "split_to": [2.0, 2.0], "split_from": [1.0, 1.0]})
     out = shares_panel(dates, secs, income, splits, window_end="2021-06-30")["s"]
     assert out[dates < "2020-03-31"].isna().all()
-    assert (out[(dates >= "2020-03-31") & (dates < "2020-06-30")] == 200.0).all()  # 100 x 2-for-1 split later
+    assert (out[(dates >= "2020-03-31") & (dates < "2020-06-30")] == 50.0).all()
     after = (dates >= "2020-06-30") & (dates <= pd.Timestamp("2020-06-30") + pd.Timedelta(days=12 * 31))
-    assert (out[after] == 110.0).all()
+    assert (out[after] == 55.0).all()
     assert out[dates > pd.Timestamp("2020-06-30") + pd.Timedelta(days=12 * 31)].isna().all()
 
 
@@ -121,3 +123,19 @@ def test_ea_window_mask_three_trading_days_and_weekend_shift() -> None:
     assert list(dates[mask[:, 0]]) == list(pd.to_datetime(["2020-04-14", "2020-04-15", "2020-04-16"]))
     assert list(dates[mask[:, 1]]) == list(pd.to_datetime(["2020-04-17", "2020-04-20", "2020-04-21"]))
     assert not mask[:, 2].any()
+
+
+def test_shares_sane_rejects_misscaled_counts() -> None:
+    from src.build import shares_sane
+    idx = pd.date_range("2020-01-31", periods=6, freq="ME")
+    vol = pd.DataFrame({"a": [1e6] * 6, "b": [1e6] * 6})
+    sh = pd.DataFrame({"a": [1e7] * 6, "b": [1e10] * 6})  # b: 0.01% monthly turnover
+    out = shares_sane(vol.set_axis(idx), sh.set_axis(idx))
+    assert out["a"].iloc[2:].all() and not out["b"].any()
+    assert not out["a"].iloc[:2].any()  # fewer than 3 months of history
+
+
+def test_shares_jump_ok_flags_unit_errors_trailing_only() -> None:
+    from src.build import shares_jump_ok
+    out = shares_jump_ok(np.array([5e6, 4.8e6, 4.9e6, 4.5e9, 4.4e6]))
+    np.testing.assert_array_equal(out, [True, True, True, False, True])

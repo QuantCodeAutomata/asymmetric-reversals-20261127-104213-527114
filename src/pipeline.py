@@ -27,7 +27,7 @@ import pandas as pd
 
 from data import data_loader as dl
 from src import config
-from src.build import (earnings_dates, ea_window_mask, security_table, shares_panel, sic_to_ff49,
+from src.build import (earnings_dates, shares_sane, ea_window_mask, security_table, shares_panel, sic_to_ff49,
                        unadjust_dividends)
 from src.characteristics import (accounting_characteristics, price_characteristics, rank_standardize,
                                  select_characteristics)
@@ -88,7 +88,7 @@ def build_base(raw: dict) -> dict:
     dates = ff_d.index[(ff_d.index >= config.PRICE_START) & (ff_d.index <= config.PRICE_END)]
     mends = month_ends(dates)
     bars = raw["bars"]
-    bars = bars[bars["date"].isin(dates)]
+    bars = bars[bars["date"].isin(dates) & (bars["close"] >= config.MIN_BAR_PRICE)]
     secs_all = secs_all.loc[secs_all.index.isin(bars["security"].astype(str).unique())]
     me_bars = bars[bars["date"].isin(mends)].assign(security=lambda x: x["security"].astype(str))
     close_me = to_wide(me_bars, "close", mends, secs_all.index).astype("float64")
@@ -96,6 +96,10 @@ def build_base(raw: dict) -> dict:
     dv_me = to_wide(me_bars, "dv", mends, secs_all.index)
     close_me_u = unadjust_dividends(close_me, secs_all, raw["divs"])
     shares_me = shares_panel(mends, secs_all, raw["income"], raw["splits"])
+    vol_m = (bars.assign(security=bars["security"].astype(str), m=bars["date"] + pd.offsets.MonthEnd(0))
+             .groupby(["m", "security"], observed=True)["volume"].sum().unstack()
+             .reindex(index=mends, columns=secs_all.index))
+    shares_me = shares_me.where(shares_sane(vol_m, shares_me))
     me = _one_security_per_cik(close_me_u * shares_me, dv_me, secs_all["cik"])
     univ = investable_mask(me)
     first_m = mends[mends >= pd.Timestamp(config.DECOMP_START) - pd.offsets.MonthEnd(2)]

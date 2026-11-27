@@ -72,9 +72,10 @@ def shares_panel(dates: pd.DatetimeIndex, secs: pd.DataFrame, income: pd.DataFra
     """Daily split-adjusted shares outstanding (adjusted to the split basis of ``window_end``).
 
     Uses the basic shares outstanding of the latest fiscal quarter ended on or
-    before each day (records older than ``config.SHARES_STALE_MONTHS`` are dropped),
-    multiplied by the split ratios executed after that quarter end, so that
-    market equity = split-adjusted price x split-adjusted shares.
+    before each day (records older than ``config.SHARES_STALE_MONTHS`` are dropped).
+    The reported counts are restated to the latest split basis, so they are divided
+    by the split ratios executed after ``window_end`` and market equity =
+    split-adjusted price x shares on the same split basis.
     """
     inc = income.dropna(subset=["basic_shares_outstanding"])
     inc = inc[inc["basic_shares_outstanding"] > 0].assign(period_end=lambda x: pd.to_datetime(x["period_end"]))
@@ -95,11 +96,13 @@ def shares_panel(dates: pd.DatetimeIndex, secs: pd.DataFrame, income: pd.DataFra
         ev = [sp_by[t] for t in secs.at[sec, "tickers"] if t in sp_by]
         if ev:
             e = pd.concat(ev).drop_duplicates("d")
-            e = e[(e["d"] > pd.Timestamp(secs.at[sec, "first_seen"]) - pd.DateOffset(years=3))]
-            fac = split_factor_after(pe, e["d"].values.astype("datetime64[ns]"), e["r"].to_numpy(float), end)
+            # after window_end a ticker may name another security; only forward splits are applied there
+            e = e[(e["d"] <= end) | (e["r"] > 1)]
+            fac = split_factor_after(e["d"].values.astype("datetime64[ns]"), e["r"].to_numpy(float), end)
         else:
-            fac = np.ones(len(pe))
-        sh = q["basic_shares_outstanding"].to_numpy(float) * fac
+            fac = 1.0
+        sh = q["basic_shares_outstanding"].to_numpy(float) / fac
+        sh = np.where(shares_jump_ok(sh), sh, np.nan)
         idx = np.searchsorted(pe, dv, side="right") - 1
         ok = idx >= 0
         age = np.where(ok, (dv - pe[np.maximum(idx, 0)]).astype("timedelta64[D]").astype(float), np.inf)
@@ -161,3 +164,23 @@ def ea_window_mask(dates: pd.DatetimeIndex, secs: pd.DataFrame, ea: pd.DataFrame
             p = p[(p >= 0) & (p < len(dates))]
             mask[p, j] = True
     return mask
+
+
+def shares_sane(vol_m: pd.DataFrame, shares_m: pd.DataFrame,
+                min_turnover: float = config.MIN_MONTHLY_TURNOVER) -> pd.DataFrame:
+    """Mask of month-end share counts consistent with traded volume.
+
+    A share count whose trailing 12-month median monthly turnover (volume / shares)
+    is below ``min_turnover`` is taken to be on a wrong scale (e.g. a different
+    share class or unit) and is rejected.
+    """
+    turn = (vol_m / shares_m).rolling(12, min_periods=3).median()
+    return turn >= min_turnover
+
+
+def shares_jump_ok(sh: np.ndarray, factor: float = config.SHARES_JUMP_FACTOR) -> np.ndarray:
+    """False for records more than ``factor`` away from the median of the previous four (trailing only)."""
+    prev = pd.Series(sh).shift(1).rolling(4, min_periods=1).median().to_numpy()
+    ratio = sh / prev
+    return ~(np.isfinite(ratio) & ((ratio > factor) | (ratio < 1.0 / factor)))
+

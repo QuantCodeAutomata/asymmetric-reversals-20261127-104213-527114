@@ -84,9 +84,7 @@ def test_dividend_factor_products_of_events_after_date() -> None:
 
 
 def test_split_factor_after_window() -> None:
-    pe = np.array(["2019-12-31", "2020-03-31", "2020-06-30"], dtype="datetime64[ns]")
     splits = np.array(["2020-02-15", "2020-08-01"], dtype="datetime64[ns]")
-    out = split_factor_after(pe, splits, np.array([2.0, 3.0]), pd.Timestamp("2020-12-31"))
-    np.testing.assert_allclose(out, [6.0, 3.0, 3.0])
-    out_early = split_factor_after(pe, splits, np.array([2.0, 3.0]), pd.Timestamp("2020-06-30"))
-    np.testing.assert_allclose(out_early, [2.0, 1.0, 1.0])
+    assert split_factor_after(splits, np.array([2.0, 3.0]), pd.Timestamp("2020-12-31")) == 1.0
+    assert split_factor_after(splits, np.array([2.0, 3.0]), pd.Timestamp("2020-06-30")) == 3.0
+    assert split_factor_after(splits, np.array([2.0, 3.0]), pd.Timestamp("2019-06-30")) == 6.0

@@ -27,14 +27,15 @@ def dividend_factor(dates: pd.DatetimeIndex, ex_dates: np.ndarray, hist_factor: 
     return (h_t / h_end).astype("float64")
 
 
-def split_factor_after(period_end: np.ndarray, split_dates: np.ndarray, ratios: np.ndarray,
-                       window_end: pd.Timestamp) -> np.ndarray:
-    """Product of split ratios (split_to/split_from) executed in (period_end, window_end]."""
-    out = np.ones(len(period_end))
-    for d, r in zip(split_dates, ratios):
-        if d <= np.datetime64(window_end):
-            out[period_end < d] *= r
-    return out
+def split_factor_after(split_dates: np.ndarray, ratios: np.ndarray, window_end: pd.Timestamp) -> float:
+    """Product of split ratios (split_to/split_from) executed after ``window_end``.
+
+    Massive quarterly statements report share counts restated to the latest split
+    basis, while the bars are split-adjusted to the end of the load window; dividing
+    the reported count by this factor puts shares on the basis of the bars.
+    """
+    after = split_dates > np.datetime64(window_end)
+    return float(np.prod(ratios[after])) if after.any() else 1.0
 
 
 def investable_mask(me: pd.DataFrame, entry: float = config.UNIV_ENTRY_SHARE,
