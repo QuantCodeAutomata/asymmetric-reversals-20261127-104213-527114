@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from data.data_loader import load_ff_monthly
 from src import config
 from src.asres import asres_signal, expanding_lambda, first_day_next_month, forecast_coefficients, size_groups
 from src.pipeline import daily_weights, load_panel
@@ -140,6 +141,12 @@ def main() -> None:
     meta = {"n_regressions": int(np.isfinite(lam[:, 0, 0]).sum()), "first_regression": str(dates[reg_days[0]].date()),
             "eval_months": [str(idx[0].date()), str(idx[-1].date())], "n_eval_months": int(len(rows)),
             "runtime_s": time.time() - t0, "maxrss_mb": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024}
+    # French REV factor over the paper's evaluation window (Jan 1974 - Dec 2022) and over the holding months here
+    rev = load_ff_monthly()["REV"]
+    hold = ff_next.loc[idx, "REV"]
+    meta["french_REV_mean_paper_window"] = float(rev.loc["1974-01-01":config.PAPER_SAMPLE_END].mean())
+    meta["french_REV_mean_eval_window"] = float(hold.mean())
+    meta["french_REV_sharpe_eval_window"] = float(hold.mean() / hold.std() * np.sqrt(12))
     save_json(meta, "exp6_meta")
     log.info("Table 7\n%s", t7.to_string())
     log.info("Table 8\n%s", t8.to_string())

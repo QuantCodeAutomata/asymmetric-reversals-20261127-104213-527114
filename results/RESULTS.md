@@ -76,7 +76,7 @@ The direction of both effects holds (residual reversal, systematic
 continuation), but the magnitudes are about one third of the paper's, and the
 SYS spread is not significant over 143 months. For comparison, the
 Fama-French short-term reversal factor averages 0.165%/month over 2013–2022
-against 0.421%/month over 1974–2022 (ratio 0.39), so reversal profits were
+against 0.421%/month over 1974–2022 (ratio 0.39; `exp6_meta.json`), so reversal profits were
 weaker in the replication period than in the paper's full sample; this was
 checked on the factor itself, not on the paper's RES portfolios for 2011–2022,
 which the paper does not report, so the gap is not attributed to the sample
@@ -292,7 +292,7 @@ in line with the paper's progression across RES variants.
   lag selection floor(4 (T/100)^(2/9)) is used throughout.
 - **Magnitude gaps.** Reversal and ASRES returns are about one third of the
   paper's. The Fama-French short-term reversal factor itself earned 0.165% per
-  month in 2013–2022 against 0.421% in 1974–2022, so the replication window
+  month in 2013–2022 against 0.421% in 1974–2022 (`exp6_meta.json`), so the replication window
   has weaker reversal profits than the paper's full sample; whether the paper's
   own estimates for 2011–2022 are similarly lower is not reported in the
   paper, and the cause of the gap was not otherwise identified.
