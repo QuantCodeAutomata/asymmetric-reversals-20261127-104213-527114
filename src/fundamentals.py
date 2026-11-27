@@ -43,7 +43,7 @@ def add_ttm_and_growth(q: pd.DataFrame) -> pd.DataFrame:
     q = q.sort_values(["cik", "period_end"]).copy()
     g = q.groupby("cik", sort=False)
     span = (q["period_end"] - g["period_end"].shift(3)).dt.days
-    complete = span.between(250, 400)
+    complete = span.between(250, 300)
     for f in FLOW_FIELDS:
         if f not in q.columns:
             continue

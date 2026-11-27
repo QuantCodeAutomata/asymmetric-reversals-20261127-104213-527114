@@ -58,7 +58,7 @@ def investable_mask(me: pd.DataFrame, entry: float = config.UNIV_ENTRY_SHARE,
 
 def nyse_percentile(values: pd.DataFrame, mask: pd.DataFrame, is_nyse: pd.Series, q: float) -> pd.Series:
     """Cross-sectional ``q`` percentile of ``values`` among NYSE stocks in ``mask``, per row."""
-    nyse = mask & is_nyse.reindex(values.columns).fillna(False).to_numpy()[None, :]
+    nyse = mask & is_nyse.reindex(values.columns).fillna(False).astype(bool).to_numpy()[None, :]
     v = values.where(nyse)
     return v.quantile(q, axis=1)
 

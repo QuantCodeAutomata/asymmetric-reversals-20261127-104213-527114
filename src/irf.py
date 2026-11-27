@@ -82,7 +82,7 @@ def daily_dl_regression(y: np.ndarray, w_day: np.ndarray, shocks: list[np.ndarra
         n = int(ok.sum())
         regs = []
         for x in shocks:
-            win = lag_window(x[:, ok], t, first_lag, last_lag).astype("float64")  # (L, n)
+            win = lag_window(x, t, first_lag, last_lag)[:, ok].astype("float64")  # (L, n)
             regs.append((basis.T @ win).T if basis is not None else win.T)
         X = np.column_stack([np.ones(n)] + regs)
         if n < X.shape[1] + 10:
