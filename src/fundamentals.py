@@ -62,12 +62,12 @@ def add_ttm_and_growth(q: pd.DataFrame) -> pd.DataFrame:
 
 
 def sue(q: pd.DataFrame) -> pd.Series:
-    """Standardized unexpected earnings (Table 1): four-quarter change in quarterly
-    EPS divided by the standard deviation of that change over the previous eight
-    quarters (at least six required; minimum not specified in the paper)."""
+    """Standardized unexpected earnings (Section 4, Table 1): four-quarter change in
+    quarterly EPS divided by the standard deviation of earnings over the previous
+    eight quarters (at least six required; minimum not specified in the paper)."""
     g = q.groupby("cik", sort=False)["eps_q"]
     chg = q["eps_q"] - g.shift(4)
-    sd = chg.groupby(q["cik"], sort=False).transform(lambda s: s.shift(1).rolling(8, min_periods=6).std())
+    sd = g.transform(lambda s: s.shift(1).rolling(8, min_periods=6).std())
     out = chg / sd
     return out.where(np.isfinite(out))
 

@@ -69,18 +69,17 @@ def test_add_ttm_is_per_cik() -> None:
     assert out.groupby("cik")["revenue_ttm"].apply(lambda s: s.isna().sum()).to_dict() == {"a": 3, "b": 3}
 
 
-def test_sue_standardizes_by_past_eight_changes(rng: np.random.Generator) -> None:
+def test_sue_standardizes_by_past_eight_quarters_of_earnings(rng: np.random.Generator) -> None:
     n = 16
     eps = np.cumsum(rng.standard_normal(n))
     q = pd.DataFrame({"cik": "a", "period_end": _quarters(n), "eps_q": eps})
     out = sue(q).to_numpy()
-    chg = eps[4:] - eps[:-4]  # change of quarter i (i >= 4) is chg[i - 4]
     for i in range(n):
-        past = chg[max(0, i - 4 - 8):max(0, i - 4)]
+        past = eps[max(0, i - 8):i]
         if i < 4 or len(past) < 6:
             assert np.isnan(out[i])
         else:
-            assert out[i] == pytest.approx(chg[i - 4] / np.std(past, ddof=1))
+            assert out[i] == pytest.approx((eps[i] - eps[i - 4]) / np.std(past, ddof=1))
 
 
 def test_to_monthly_point_in_time_lag_and_staleness() -> None:
