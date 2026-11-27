@@ -262,6 +262,7 @@ def load_panel(rebuild: bool = False) -> dict:
         elif isinstance(v, pd.DatetimeIndex):
             np.save(PANEL_DIR / f"{k}.npy", v.values)
         else:
-            np.save(PANEL_DIR / f"{k}.npy", np.asarray(v))
+            a = np.asarray(v)
+            np.save(PANEL_DIR / f"{k}.npy", a.astype(str) if a.dtype == object else a)
     done.write_text("ok")
     return load_panel()
