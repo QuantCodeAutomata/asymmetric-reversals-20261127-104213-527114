@@ -89,7 +89,7 @@ Fama-MacBeth regressions of next-month returns (Table 2, WLS with the six
 Fama-French controls; OLS and no-control versions also saved), IVOL horizon
 dependence (Figure 2), regressions within mispricing quintiles (Table 3,
 2011–2016, 65–68 months per quintile) and concavity (Table 4). Files: `exp3_eq15_ivol_on_res.csv`,
-`exp3_table2_spanning_ivol.csv`, `exp3_figure2_ivol_horizon.csv/.png`,
+`exp3_table2_spanning_ivol.csv`, `exp3_figure2_ivol_horizon.csv`, `exp3_figure2_ivol_horizon.png`,
 `exp3_table3_misp.csv`, `exp3_table4_concavity.csv`, `exp3_summary.json`.
 
 | Metric | Paper | Replication | Verdict |
